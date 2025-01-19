@@ -26,6 +26,13 @@ function scenemanager:loadnewscene()
 end
 
 function scenemanager:cleanupscene()
+	if classes ~= nil then
+		for i = #classes, 1, -1 do
+			classes[i] = nil
+		end
+		classes = nil
+	end
+	classes = {}
     gfx.sprite:removeAll()
     if sprites ~= nil then
         for i = 1, #sprites do
@@ -48,6 +55,7 @@ function scenemanager:cleanupscene()
     self:removealltimers() -- Remove every timer,
     collectgarbage('collect') -- and collect the garbage.
     gfx.setDrawOffset(0, 0) -- Lastly, reset the drawing offset. just in case.
+	pulp.audio.stopSong()
 end
 
 function scenemanager:removealltimers()
