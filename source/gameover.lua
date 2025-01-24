@@ -10,6 +10,9 @@ function gameover:init(...)
 	local args = {...} -- Arguments passed in through the scene management will arrive here
 	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
 
+	function pd.gameWillPause() -- When the game's paused...
+	end
+
 	assets = { -- All assets go here. Images, sounds, fonts, etc.
 		c = gfx.font.new('fonts/c'),
 		nd = gfx.font.new('fonts/nd'),
@@ -27,15 +30,21 @@ function gameover:init(...)
 	}
 	vars.gameoverHandlers = {
 		AButtonDown = function()
-			if vars.hardcore then
-				scenemanager:switchscene(game, false, true)
-			else
-				scenemanager:switchscene(game, false)
+			if not scenemanager.transitioning then
+				pulp.audio.playSound('select')
+				if vars.hardcore then
+					scenemanager:transitionscene(game, false, true)
+				else
+					scenemanager:transitionscene(game, false)
+				end
 			end
 		end,
 
 		BButtonDown = function()
-			scenemanager:switchscene(title)
+			if not scenemanager.transitioning then
+				pulp.audio.playSound('back')
+				scenemanager:transitionscene(title)
+			end
 		end,
 	}
 	pd.inputHandlers.push(vars.gameoverHandlers)
@@ -75,4 +84,5 @@ function gameover:init(...)
 	end
 
 	self:add()
+	pulp.audio.playSong('title_lower')
 end

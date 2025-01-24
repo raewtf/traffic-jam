@@ -22,7 +22,7 @@ local fle <const> = pd.sound.fileplayer
 local text <const> = gfx.getLocalizedText
 
 pd.display.setRefreshRate(50)
-gfx.setBackgroundColor(gfx.kColorWhite)
+gfx.setBackgroundColor(gfx.kColorBlack)
 pulp.audio.init()
 
 catalog = false
@@ -43,6 +43,8 @@ function savecheck()
 	save.hardcore_highest_level = save.hardcore_highest_level or 0
 	save.crankage = save.crankage or 0
 	save.crankage_net = save.crankage_net or 0
+	if save.react_sfx == nil then save.react_sfx = true end
+	if save.seen_tutorial == nil then save.seen_tutorial = false end
 end
 
 -- ... now we run that!
@@ -51,6 +53,15 @@ savecheck()
 -- When the game closes...
 function pd.gameWillTerminate()
     pd.datastore.write(save)
+	local img = gfx.getDisplayImage()
+	local byebye = gfx.imagetable.new('images/exit' .. math.random(1, 4))
+	local byebyeanim = gfx.animator.new(750, 1, #byebye)
+	gfx.setDrawOffset(0, 0)
+	while not byebyeanim:ended() do
+		img:draw(0, 0)
+		byebye:drawImage(math.floor(byebyeanim:currentValue()), 0, 0)
+		pd.display.flush()
+	end
 end
 
 function pd.deviceWillSleep()
@@ -160,7 +171,7 @@ function shakies_y(time, int)
 	anim_shakies_y = pd.timer.new(time or 750, int or 10, 0, pd.easingFunctions.outElastic)
 end
 
-scenemanager:switchscene(title)
+scenemanager:switchscene(title, true)
 
 function pd.update()
 	-- Screen shake update logic
@@ -174,7 +185,6 @@ function pd.update()
     -- Catch-all stuff ...
     gfx.sprite.update()
     pd.timer.updateTimers()
-    pd.drawFPS(376, 10)
 	pulp.audio.update()
 	if vars.crank_touched ~= nil and not vars.crank_touched then
 		pd.ui.crankIndicator:draw()

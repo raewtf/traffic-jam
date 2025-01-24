@@ -15,6 +15,9 @@
 "level4tag" = "It's about to get real!"
 "level5tag" = "Let's go!"
 "levelspeed" = "Speed up!!"
+"end_game" = "end game"
+"react_sfx" = "react sfx"
+"end_tutorial" = "end tutorial"
 
 "gameover" = "Game Over!"
 "youscored" = "You scored "
@@ -44,7 +47,20 @@
 "hardcorereq" = "Score 50 or higher\nto unlock Hardcore Mode!"
 
 "thankyouforplaying" = "Thank you for playing!"
-"fullcredits" = "This game was made by rae.\nShe did the code, art, music, and sound FX.\n\nThanks to Panic for opening up the Pulp\naudio runtime for SDK titles! (And for\nletting me use the Transmit truck.)\n\nThanks to the Playdate Squad as always for\nyour endless help and patience!"
+"fullcredits" = "This game was made by rae.\nShe did the code, art, music, and sound FX.\n\nThanks to Panic for the \"Cuberick\" and\n\"Nontendo\" fonts, the Pulp audio runtime,\nand letting me use the Transmit truck.\n\nThanks to the Playdate Squad as always for\nyour endless help and patience!"
 
 "Aretry" = "Press A to start a new game. "
 "Bback" = "Press B to return to title."
+"Acontinue" = "Press A to continue."
+
+"tutorial1" = "Hey! Thanks for volunteering to be our traffic\nguide. Nebulous construction work\'s a tough job!"
+"tutorial2" = "We\'re trying out a new rhythm-based method to\nguide the cars. Let\'s show you the ropes!"
+"tutorial3" = "First off - you know how to use your Crank,\nright? Try giving your sign a few spins."
+"tutorial4" = "Great! The main thing you need to know is that\nyou\'re waving two ways - left, and right."
+"tutorial5" = "Now, there are four types of cars. Each one has\ntheir own special warning to tell you they're passing."
+"tutorial6" = "Let's start off with the Sedan. Listen for its\nspecial cue, and wave it along in the proper direction."
+"tutorial7" = "Awesome!! Did you notice the warning indicators at\nyour sides? These will tell you where to guide the car."
+"tutorial8" = "Next, let\'s listen for the Luxury Car. This one\ncomes faster, so get ready to wave them through!"
+"tutorial9" = "Good! Now, here\'s the Speed Racers. They arrive\nREALLY fast - you won't have much time to prepare!"
+"tutorial10" = "Nice! You\'re getting the hang of this. Lastly, we\nhave the Semi Hauler, with its off-kilter warning."
+"tutorial11" = "Great work!! Seems like you\'re ready for the road.\nGet out there and guide that traffic!"

@@ -51,7 +51,7 @@ local VoiceToWave = {
 	[VoiceType.Noise] = snd.kWaveNoise,
 }
 
-local baseVolume = 0.3 -- reduce clipping at max volume
+local baseVolume = 0.6 -- reduce clipping at max volume
 local function setVolume(voice, v)
 	if voice.type==VoiceType.Noise then
 		v *= 0.3 -- SDK noise is much louder relative to JavaScript noise generator

@@ -15,6 +15,9 @@ function title:init(...)
 	local args = {...} -- Arguments passed in through the scene management will arrive here
 	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
 
+	function pd.gameWillPause() -- When the game's paused...
+	end
+
 	assets = { -- All assets go here. Images, sounds, fonts, etc.
 		c = gfx.font.new('fonts/c'),
 		nd = gfx.font.new('fonts/nd'),
@@ -26,9 +29,7 @@ function title:init(...)
 	}
 
 	vars = { -- All variables go here. Args passed in from earlier, scene variables, etc.
-		selection = 1,
-		selection_timer = pd.timer.new(1, 30, 30),
-		intro_anim = pd.timer.new(500, 50, 0, pd.easingFunctions.outBack),
+		play_intro = args[1],
 	}
 	vars.titleHandlers = {
 		upButtonDown = function()
@@ -40,6 +41,7 @@ function title:init(...)
 					else
 						vars.selection = #vars.selections
 					end
+					pulp.audio.playSound('move')
 					vars.selection_timer = pd.timer.new(200, vars.selection_timer.value, -30 * vars.selection + 60, pd.easingFunctions.outBack)
 				end)
 			end
@@ -58,6 +60,7 @@ function title:init(...)
 					else
 						vars.selection = 1
 					end
+					pulp.audio.playSound('move')
 					vars.selection_timer = pd.timer.new(200, vars.selection_timer.value, -30 * vars.selection + 60, pd.easingFunctions.outBack)
 				end)
 			end
@@ -68,22 +71,31 @@ function title:init(...)
 		end,
 
 		AButtonDown = function()
-			if vars.selections[vars.selection] == 'newgame' then
-				scenemanager:switchscene(game, false)
-			elseif vars.selections[vars.selection] == 'hardcore' then
-				scenemanager:switchscene(game, false, true)
-			elseif vars.selections[vars.selection] == 'practice' then
-				scenemanager:switchscene(game, true)
-			elseif vars.selections[vars.selection] == 'leaderboards' then
-				scenemanager:switchscene(leaderboards)
-			elseif vars.selections[vars.selection] == 'stats' then
-				scenemanager:switchscene(stats)
-			elseif vars.selections[vars.selection] == 'credits' then
-				scenemanager:switchscene(credits)
+			if not scenemanager.transitioning then
+				if vars.selections[vars.selection] == 'newgame' then
+					scenemanager:transitionscene(game, false)
+				elseif vars.selections[vars.selection] == 'hardcore' then
+					scenemanager:transitionscene(game, false, true)
+				elseif vars.selections[vars.selection] == 'practice' then
+					scenemanager:transitionscene(game, true)
+				elseif vars.selections[vars.selection] == 'leaderboards' then
+					scenemanager:transitionscene(leaderboards)
+				elseif vars.selections[vars.selection] == 'stats' then
+					scenemanager:transitionscene(stats)
+				elseif vars.selections[vars.selection] == 'credits' then
+					scenemanager:transitionscene(credits)
+				end
+				pulp.audio.playSound('select')
 			end
 		end,
 	}
 	pd.inputHandlers.push(vars.titleHandlers)
+
+	if vars.play_intro then
+		vars.intro_anim = pd.timer.new(500, 50, 0, pd.easingFunctions.outBack)
+	else
+		vars.intro_anim = pd.timer.new(1, 0, 0)
+	end
 
 	vars.selections = {'newgame'}
 
@@ -94,15 +106,30 @@ function title:init(...)
 	table.insert(vars.selections, 'practice')
 
 	if catalog then
-		table.insert(vars.selections, 'leaderboards')
+		-- TODO: re-enable this later on once we actually have leaderboards/a leaderboards screen
+		-- table.insert(vars.selections, 'leaderboards')
 	end
 
 	table.insert(vars.selections, 'stats')
 	table.insert(vars.selections, 'credits')
 
+	if save.seen_tutorial then
+		vars.selection = 1
+		vars.selection_timer = pd.timer.new(1, 30, 30)
+	else
+		if save.score >= 50 then
+			vars.selection = 3
+			vars.selection_timer = pd.timer.new(1, -30, -30)
+		else
+			vars.selection = 2
+			vars.selection_timer = pd.timer.new(1, 00, 00)
+		end
+	end
+
 	vars.selection_timer.destroyOnCompletion = false
 
 	gfx.sprite.setBackgroundDrawingCallback(function(x, y, width, height)
+		gfx.setColor(gfx.kColorWhite)
 		gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer2x2)
 		gfx.fillRect(0, 0, 400, 240)
 		gfx.setColor(gfx.kColorWhite)
@@ -192,17 +219,19 @@ function title:init(...)
 
 	self:add()
 	pulp.audio.playSong('title')
+	pd.getCrankTicks(4)
 end
 
 function title:update()
 	local ticks = pd.getCrankTicks(4)
-	if ticks ~= 0 and vars.selection > 0 then
+	if ticks ~= 0 then
 		vars.selection += ticks
 		if vars.selection < 1 then
 			vars.selection = #vars.selections
 		elseif vars.selection > #vars.selections then
 			vars.selection = 1
 		end
+		pulp.audio.playSound('move')
 		vars.selection_timer = pd.timer.new(200, vars.selection_timer.value, -30 * vars.selection + 60, pd.easingFunctions.outBack)
 	end
 	gfx.sprite.redrawBackground()

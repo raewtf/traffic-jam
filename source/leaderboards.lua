@@ -10,6 +10,9 @@ function leaderboards:init(...)
 	local args = {...} -- Arguments passed in through the scene management will arrive here
 	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
 
+	function pd.gameWillPause() -- When the game's paused...
+	end
+
 	assets = { -- All assets go here. Images, sounds, fonts, etc.
 		c = gfx.font.new('fonts/c'),
 		nd = gfx.font.new('fonts/nd'),
