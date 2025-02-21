@@ -11,6 +11,8 @@ function gameover:init(...)
 	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
 
 	function pd.gameWillPause() -- When the game's paused...
+		local menu = pd.getSystemMenu()
+		menu:removeAllMenuItems()
 	end
 
 	assets = { -- All assets go here. Images, sounds, fonts, etc.
@@ -77,10 +79,12 @@ function gameover:init(...)
 		if vars.score > save.hardcore_score then save.hardcore_score = vars.score end
 		if vars.level > save.hardcore_highest_level then save.hardcore_highest_level = vars.level end
 		if vars.bpm > save.hardcore_highest_bpm then save.hardcore_highest_bpm = vars.bpm end
+		if catalog then pd.scoreboards.addScore('hardcore', vars.score) end
 	else
 		if vars.score > save.score then save.score = vars.score end
 		if vars.level > save.highest_level then save.highest_level = vars.level end
 		if vars.bpm > save.highest_bpm then save.highest_bpm = vars.bpm end
+		if catalog then pd.scoreboards.addScore('normal', vars.score) end
 	end
 
 	self:add()

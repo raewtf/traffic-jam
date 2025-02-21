@@ -11,6 +11,8 @@ function stats:init(...)
 	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
 
 	function pd.gameWillPause() -- When the game's paused...
+		local menu = pd.getSystemMenu()
+		menu:removeAllMenuItems()
 	end
 
 	assets = { -- All assets go here. Images, sounds, fonts, etc.
@@ -52,8 +54,8 @@ function stats:init(...)
 			assets.c:drawTextAligned(text('hardcorereq'), 295, 69, kTextAlignment.center)
 		end
 		assets.c:drawTextAligned(text('carspassed') .. commalize(save.cars_passed), 200, 135, kTextAlignment.center)
-		assets.c:drawTextAligned(text('crankage') .. commalize(save.crankage) .. text('deg'), 200, 155, kTextAlignment.center)
-		assets.c:drawTextAligned(text('crankage_net') .. commalize(save.crankage_net) .. text('deg'), 200, 175, kTextAlignment.center)
+		assets.c:drawTextAligned(text('crankage') .. commalize(string.format("%.02f", save.crankage)) .. text('deg'), 200, 155, kTextAlignment.center)
+		assets.c:drawTextAligned(text('crankage_net') .. commalize(string.format("%.02f", save.crankage_net)) .. text('deg'), 200, 175, kTextAlignment.center)
 		gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
 		assets.c:drawText(text('Bback'), 10, 222)
 		gfx.setImageDrawMode(gfx.kDrawModeCopy)

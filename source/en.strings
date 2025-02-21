@@ -29,13 +29,13 @@
 "thatsbpm" = " BPM!)"
 "unlockedhardcore" = "Great score! You unlocked Hardcore Mode!\nTry it out from the title screen."
 
-"highscores" = "High Scores"
+"bestscores" = "Best Scores"
 "divider" = " - "
 "normalmode" = "Normal Mode"
 "hardcoremode" = "Hardcore Mode"
-"withascoreof" = "With a score of "
-"youre" = ", you're "
-"excl" = "!"
+"loadingscores" = "Loading global scores, please wait..."
+"failedscores" = "Failed to get global scores."
+"emptyscores" = "This board is empty. Flip those signs!"
 
 "bestscore" = "Best Score: "
 "carspassed" = "Cars Passed: "
@@ -50,8 +50,12 @@
 "fullcredits" = "This game was made by rae.\nShe did the code, art, music, and sound FX.\n\nThanks to Panic for the \"Cuberick\" and\n\"Nontendo\" fonts, the Pulp audio runtime,\nand letting me use the Transmit truck.\n\nThanks to the Playdate Squad as always for\nyour endless help and patience!"
 
 "Aretry" = "Press A to start a new game. "
+"Ahardcore" = "Press A for Hardcore scores. "
+"Anormal" = "Press A for Normal scores. "
+"Arefresh" = "Press A to refresh scores. "
 "Bback" = "Press B to return to title."
 "Acontinue" = "Press A to continue."
+"refresh" = "refresh"
 
 "tutorial1" = "Hey! Thanks for volunteering to be our traffic\nguide. Nebulous construction work\'s a tough job!"
 "tutorial2" = "We\'re trying out a new rhythm-based method to\nguide the cars. Let\'s show you the ropes!"

@@ -16,6 +16,8 @@ function title:init(...)
 	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
 
 	function pd.gameWillPause() -- When the game's paused...
+		local menu = pd.getSystemMenu()
+		menu:removeAllMenuItems()
 	end
 
 	assets = { -- All assets go here. Images, sounds, fonts, etc.
@@ -106,8 +108,7 @@ function title:init(...)
 	table.insert(vars.selections, 'practice')
 
 	if catalog then
-		-- TODO: re-enable this later on once we actually have leaderboards/a leaderboards screen
-		-- table.insert(vars.selections, 'leaderboards')
+		table.insert(vars.selections, 'leaderboards')
 	end
 
 	table.insert(vars.selections, 'stats')
