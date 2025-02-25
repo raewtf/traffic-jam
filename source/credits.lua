@@ -10,6 +10,8 @@ function credits:init(...)
 	local args = {...} -- Arguments passed in through the scene management will arrive here
 	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
 
+	pd.datastore.write(save)
+
 	function pd.gameWillPause() -- When the game's paused...
 	end
 

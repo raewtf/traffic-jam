@@ -55,7 +55,7 @@ function pd.gameWillTerminate()
     pd.datastore.write(save)
 	local img = gfx.getDisplayImage()
 	local byebye = gfx.imagetable.new('images/exit' .. math.random(1, 4))
-	local byebyeanim = gfx.animator.new(750, 1, #byebye)
+	local byebyeanim = gfx.animator.new(1100, 1, #byebye)
 	gfx.setDrawOffset(0, 0)
 	while not byebyeanim:ended() do
 		img:draw(0, 0)

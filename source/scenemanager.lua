@@ -41,7 +41,7 @@ function scenemanager:transitionscene(scene, ...)
 	-- your image table will play during the FIRST HALF of transition period. It
 	-- should be able to go backwards, but they MUST be whole numbers and it
 	-- MUST be within the range of your image table's image count.
-	local transitiontimer = self:transition(1, 10)
+	local transitiontimer = self:transition(1, 13)
 	-- After the first timer ends...
 	transitiontimer.timerEndedCallback = function()
 		-- Load the scene, and create a second timer for the other half.
@@ -49,7 +49,7 @@ function scenemanager:transitionscene(scene, ...)
 		-- These two numbers work the same way as the previous, but will
 		-- determine which frames of your image table will play during
 		-- the SECOND HALF of the transition period.
-		transitiontimer = self:transition(10, 15)
+		transitiontimer = self:transition(13, 20)
 		transitiontimer.timerEndedCallback = function()
 			-- After this timer's over, remove the transition and the sprites.
 			self.transitioning = false

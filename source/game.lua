@@ -16,13 +16,15 @@ class('game').extends(gfx.sprite) -- Create the scene's class
 function game:init(...)
 	game.super.init(self)
 	local args = {...} -- Arguments passed in through the scene management will arrive here
-	gfx.sprite.setAlwaysRedraw(true) -- Should this scene redraw the sprites constantly?
+	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
+
+	pd.datastore.write(save)
 
 	function pd.gameWillPause() -- When the game's paused...
 		local menu = pd.getSystemMenu()
 		menu:removeAllMenuItems()
 		if not scenemanager.transitioning then
-			if vars.practice then
+			if vars.tutorial then
 				menu:addMenuItem(text('end_tutorial'), function()
 					vars.in_progress = false
 					pulp.audio.stopSong()
@@ -52,14 +54,16 @@ function game:init(...)
 		worker = gfx.image.new('images/worker'),
 	    sign_right = gfx.imagetable.new('images/sign_right'),
 		sign_left = gfx.imagetable.new('images/sign_left'),
-		sign_flip = gfx.image.new('images/sign_flip'),
+		sign_flip = gfx.imagetable.new('images/sign_flip'),
+		sign_flipper = gfx.imagetable.new('images/sign_flipper'),
 		car = gfx.imagetable.new('images/car'),
 		car_flip = gfx.imagetable.new('images/car_flip'),
 		warn = gfx.image.new('images/warn'),
+		clouds = gfx.image.new('images/clouds'),
 	}
 
 	vars = { -- All variables go here. Args passed in from earlier, scene variables, etc.
-		practice = args[1],
+		tutorial = args[1],
 		hardcore = args[2],
 		score = 0,
 		bpm = 120,
@@ -77,43 +81,46 @@ function game:init(...)
 		show_info = false,
 		crank = 0,
 		last_crank = 0,
-		practice_step = 1,
-		practice_cue_open = false,
-		practice_can_proceed = false,
-		practice_cars_dropped = 0,
-		practice_cars_passed = 0,
-		practice_crank = 0,
+		tutorial_step = 1,
+		tutorial_cue_open = false,
+		tutorial_can_proceed = false,
+		tutorial_cars_dropped = 0,
+		tutorial_cars_passed = 0,
+		tutorial_crank = 0,
 		y_anim = pd.timer.new(200, 185, 180),
+		sign_flip_anim = pd.timer.new(1, 0, 0),
+		clouds_anim = pd.timer.new(120000, 0, -800),
+		clouds_last = 0,
 	}
 	vars.gameHandlers = {
 		AButtonDown = function()
-			if vars.practice_can_proceed then
-				if vars.practice_step == 5 or vars.practice_step == 7 then
-					vars.practice_cue_open = false
-					vars.practice_can_proceed = false
-					vars.practice_step += 1
+			if vars.tutorial_can_proceed then
+				if vars.tutorial_step == 5 or vars.tutorial_step == 7 then
+					vars.tutorial_cue_open = false
+					vars.tutorial_can_proceed = false
+					vars.tutorial_step += 1
 					pulp.audio.playSound('select')
 					pd.timer.performAfterDelay(500, function()
-						vars.practice_cue_open = true
+						vars.tutorial_cue_open = true
 						pd.timer.performAfterDelay(1000, function()
 							game:startround()
 						end)
 					end)
-				elseif vars.practice_step == 11 then
+				elseif vars.tutorial_step == 11 then
 					scenemanager:transitionscene(title)
 					save.seen_tutorial = true
 				else
-					vars.practice_cue_open = false
-					vars.practice_can_proceed = false
-					vars.practice_step += 1
+					vars.tutorial_cue_open = false
+					vars.tutorial_can_proceed = false
+					vars.tutorial_step += 1
 					pulp.audio.playSound('select')
 					pd.timer.performAfterDelay(500, function()
-						vars.practice_cue_open = true
-						if vars.practice_step == 3 then
+						vars.tutorial_cue_open = true
+						if vars.tutorial_step == 3 then
 							vars.crank_touched = false
 						else
 							pd.timer.performAfterDelay(1000, function()
-								vars.practice_can_proceed = true
+								vars.tutorial_can_proceed = true
 							end)
 						end
 					end)
@@ -121,7 +128,7 @@ function game:init(...)
 			end
 		end,
 	}
-	if vars.practice then
+	if vars.tutorial then
 		pd.inputHandlers.push(vars.gameHandlers)
 		vars.crank_touched = true
 	else
@@ -137,6 +144,8 @@ function game:init(...)
 	end
 	vars.warn_left.discardOnCompletion = false
 	vars.warn_right.discardOnCompletion = false
+	vars.sign_flip_anim.discardOnCompletion = false
+	vars.clouds_anim.repeats = true
 	vars.beat = (60000 / vars.bpm)
 	vars.timing.discardOnCompletion = false
 	vars.y_anim.repeats = true
@@ -147,7 +156,8 @@ function game:init(...)
 		else
 			assets.bg:draw(0, 0)
 		end
-		if not vars.practice then
+		assets.clouds:draw(vars.clouds_anim.value // 2 * 2, 0)
+		if not vars.tutorial then
 			assets.nd:drawText(commalize(vars.score), 10, 10)
 			if vars.hardcore then
 				if vars.lives >= 1 then
@@ -173,8 +183,8 @@ function game:init(...)
 				end
 			end
 		else
-			if vars.practice_cue_open then
-				if vars.practice_can_proceed then
+			if vars.tutorial_cue_open then
+				if vars.tutorial_can_proceed then
 					gfx.fillRect(0, 0, 400, 70)
 					gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
 						assets.c:drawTextAligned(text('Acontinue'), 200, 54, kTextAlignment.center)
@@ -185,7 +195,7 @@ function game:init(...)
 				gfx.setColor(gfx.kColorWhite)
 				gfx.fillRect(0, 0, 400, 53)
 				gfx.setColor(gfx.kColorBlack)
-				assets.c:drawTextAligned(text('tutorial' .. vars.practice_step), 200, 10, kTextAlignment.center)
+				assets.c:drawTextAligned(text('tutorial' .. vars.tutorial_step), 200, 10, kTextAlignment.center)
 			end
 		end
 	end)
@@ -213,44 +223,44 @@ function game:init(...)
 			self.warn = "left"
 		end
 		self:add()
-		if vars.practice then vars.practice_cars_dropped += 1 end
+		if vars.tutorial then vars.tutorial_cars_dropped += 1 end
 		if self.type == 1 then
 			self.windup = vars.beat * 4
 			self.timer_duration = vars.beat * 4
-			pulp.audio.playSound('metro1')
+			if self.direction then pulp.audio.playSound('metro3') else pulp.audio.playSound('metro1') end
 			vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
-			self.prep_timer_1 = pd.timer.performAfterDelay(vars.beat, function()
+			self.prep_timer_1 = pd.timer.performAfterDelay(vars.beat * 1.005, function()
 				if vars.lives <= 0 then return end
-				pulp.audio.playSound('metro2')
+				if self.direction then pulp.audio.playSound('metro4') else pulp.audio.playSound('metro2') end
 				vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 			end)
-			self.prep_timer_2 = pd.timer.performAfterDelay(vars.beat * 2, function()
+			self.prep_timer_2 = pd.timer.performAfterDelay(vars.beat * 2.0225, function()
 				if vars.lives <= 0 then return end
-				pulp.audio.playSound('metro2')
+				if self.direction then pulp.audio.playSound('metro4') else pulp.audio.playSound('metro2') end
 				vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 			end)
-			self.prep_timer_3 = pd.timer.performAfterDelay(vars.beat * 3, function()
+			self.prep_timer_3 = pd.timer.performAfterDelay(vars.beat * 3.075, function()
 				if vars.lives <= 0 then return end
-				pulp.audio.playSound('metro2')
+				if self.direction then pulp.audio.playSound('metro4') else pulp.audio.playSound('metro2') end
 				vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 			end)
-			self.prep_timer_4 = pd.timer.performAfterDelay(vars.beat * 4, function()
+			self.prep_timer_4 = pd.timer.performAfterDelay(vars.beat * 4.03, function()
 				if vars.lives <= 0 then return end
 				pulp.audio.playSound('car1drive')
 			end)
 		elseif type == 2 then
 			self.windup = vars.beat * 2
 			self.timer_duration = vars.beat * 2
-			pulp.audio.playSound('metro1')
+			if self.direction then pulp.audio.playSound('metro3') else pulp.audio.playSound('metro1') end
 			vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 			self.prep_timer_1 = pd.timer.performAfterDelay(vars.beat / 2, function()
 				if vars.lives <= 0 then return end
-				pulp.audio.playSound('metro2')
+				if self.direction then pulp.audio.playSound('metro4') else pulp.audio.playSound('metro2') end
 				vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 			end)
 			self.prep_timer_2 = pd.timer.performAfterDelay(vars.beat, function()
 				if vars.lives <= 0 then return end
-				pulp.audio.playSound('metro2')
+				if self.direction then pulp.audio.playSound('metro4') else pulp.audio.playSound('metro2') end
 				vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 			end)
 			self.prep_timer_3 = pd.timer.performAfterDelay(vars.beat * 2, function()
@@ -260,11 +270,11 @@ function game:init(...)
 		elseif type == 3 then
 			self.windup = vars.beat * 3
 			self.timer_duration = vars.beat
-			pulp.audio.playSound('metro1')
+			if self.direction then pulp.audio.playSound('metro3') else pulp.audio.playSound('metro1') end
 			vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 			self.prep_timer_1 = pd.timer.performAfterDelay(vars.beat, function()
 				if vars.lives <= 0 then return end
-				pulp.audio.playSound('metro1')
+				if self.direction then pulp.audio.playSound('metro3') else pulp.audio.playSound('metro1') end
 				vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 			end)
 			self.prep_timer_2 = pd.timer.performAfterDelay(vars.beat * 2, function()
@@ -278,16 +288,16 @@ function game:init(...)
 		elseif type == 4 then
 			self.windup = vars.beat * 2
 			self.timer_duration = vars.beat * 6
-			pulp.audio.playSound('metro1')
+			if self.direction then pulp.audio.playSound('metro3') else pulp.audio.playSound('metro1') end
 			vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 			self.prep_timer_1 = pd.timer.performAfterDelay(vars.beat / 1.4, function()
 				if vars.lives <= 0 then return end
-				pulp.audio.playSound('metro2')
+				if self.direction then pulp.audio.playSound('metro4') else pulp.audio.playSound('metro2') end
 				vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 			end)
 			self.prep_timer_2 = pd.timer.performAfterDelay(vars.beat * 1.5, function()
 				if vars.lives <= 0 then return end
-				pulp.audio.playSound('metro2')
+				if self.direction then pulp.audio.playSound('metro4') else pulp.audio.playSound('metro2') end
 				vars['warn_' .. self.warn]:resetnew(vars.beat / 4, 100, 0)
 				pulp.audio.playSound('car4drive')
 			end)
@@ -304,22 +314,35 @@ function game:init(...)
 						save.cars_passed += 1
 						if save.react_sfx then
 							pulp.audio.playSound('yea')
-							if vars.practice then vars.practice_cars_passed += 1 end
 						end
+						if vars.tutorial then vars.tutorial_cars_passed += 1 end
+						if vars.score % 100 == 0 then
+							vars.lives += 1
+							if vars.lives > 3 then vars.lives = 3 end
+							gfx.sprite.redrawBackground()
+						end
+						gfx.sprite.redrawBackground()
 					elseif not direction and crank < 180 then
 						vars.score += 1
 						save.cars_passed += 1
 						if save.react_sfx then
 							pulp.audio.playSound('yea')
-							if vars.practice then vars.practice_cars_passed += 1 end
 						end
+						if vars.tutorial then vars.tutorial_cars_passed += 1 end
+						if vars.score % 100 == 0 then
+							vars.lives += 1
+							if vars.lives > 3 then vars.lives = 3 end
+							gfx.sprite.redrawBackground()
+						end
+						gfx.sprite.redrawBackground()
 					else
-						if vars.practice then
+						if vars.tutorial then
 							shakies()
 							shakies_y()
 							if save.react_sfx then pulp.audio.playSound('nah') end
 						else
 							vars.lives -= 1
+							gfx.sprite.redrawBackground()
 							shakies()
 							shakies_y()
 							if vars.lives == 0 then
@@ -329,6 +352,8 @@ function game:init(...)
 								pulp.audio.stopSong()
 								pd.timer.performAfterDelay(1000, function()
 									pulp.audio.playSound('crash')
+									shakies()
+									shakies_y()
 									if vars.warn == "right" then
 										scenemanager:crashscenel(gameover, vars.score, vars.level, vars.bpm, vars.hardcore)
 									else
@@ -358,11 +383,16 @@ function game:init(...)
 	class('playfield', _, classes).extends(gfx.sprite)
 	function classes.playfield:init()
 		classes.playfield.super.init(self)
-		self:setSize(400, 240)
+		self:setSize(400, 185)
 		self:setZIndex(3)
-		self:moveTo(0, 0)
+		self:moveTo(0, 55)
 		self:setCenter(0, 0)
 		self:add()
+	end
+	function classes.playfield:update()
+		if math.floor(vars.timing.value) >= 140 or vars.warn_left.value > 0 or vars.warn_right.value > 0 or pd.getCrankChange() ~= 0 then
+			self:markDirty()
+		end
 	end
 	function classes.playfield:draw()
 		vars.crank = pd.getCrankPosition()
@@ -373,21 +403,26 @@ function game:init(...)
 			crank %= 360
 		end
 		if vars.last_crank > 180 and vars.crank < 180 or vars.last_crank < 180 and vars.crank > 180 then
-			assets.sign_flip:draw(170, -80 + vars.timing.value)
+			vars.sign_flip_anim:resetnew(100, 2.99, 0)
+		end
+		if floor(vars.sign_flip_anim.value) == 2 then
+			assets.sign_flip[floor(crank/2) + 1]:draw(floor((89 + (sin(rad(crank)) * 70)) / 2) * 2, floor((-10 - (cos(rad(crank)) * 70) + vars.timing.value) / 2) * 2 - 55)
+		elseif floor(vars.sign_flip_anim.value) == 1 then
+			assets.sign_flipper[floor(crank/2) + 1]:draw(floor((89 + (sin(rad(crank)) * 70)) / 2) * 2, floor((-10 - (cos(rad(crank)) * 70) + vars.timing.value) / 2) * 2 - 55)
 		else
 			if crank > 180 then
-				assets.sign_left[floor(crank/2) + 1]:draw(floor((89 + (sin(rad(crank)) * 70)) / 2) * 2, floor((-10 - (cos(rad(crank)) * 70) + vars.timing.value) / 2) * 2)
+				assets.sign_left[floor(crank/2) + 1]:draw(floor((89 + (sin(rad(crank)) * 70)) / 2) * 2, floor((-10 - (cos(rad(crank)) * 70) + vars.timing.value) / 2) * 2 - 55)
 			else
-				assets.sign_right[floor(crank/2) + 1]:draw(floor((89 + (sin(rad(crank)) * 70)) / 2) * 2, floor((-10 - (cos(rad(crank)) * 70) + vars.timing.value) / 2) * 2)
+				assets.sign_right[floor(crank/2) + 1]:draw(floor((89 + (sin(rad(crank)) * 70)) / 2) * 2, floor((-10 - (cos(rad(crank)) * 70) + vars.timing.value) / 2) * 2 - 55)
 			end
 		end
 		vars.last_crank = vars.crank
-		assets.worker:draw(158, vars.timing.value - (cos(rad(crank)) * 3) + 10)
-		if vars.warn_left.value ~= 0 then
-			assets.warn:draw(10, 120)
+		assets.worker:draw(158, vars.timing.value - (cos(rad(crank)) * 3) - 45)
+		if vars.warn_left.value > 25 then
+			assets.warn:draw(10, 120 - 55)
 		end
-		if vars.warn_right.value ~= 0 then
-			assets.warn:draw(325, 120, gfx.kImageFlippedX)
+		if vars.warn_right.value > 25 then
+			assets.warn:draw(325, 120 - 55, gfx.kImageFlippedX)
 		end
 	end
 
@@ -399,10 +434,10 @@ function game:init(...)
 	self:add()
 
 	pd.timer.performAfterDelay(2000, function()
-		if vars.practice then
-			vars.practice_cue_open = true
+		if vars.tutorial then
+			vars.tutorial_cue_open = true
 			pd.timer.performAfterDelay(1000, function()
-				vars.practice_can_proceed = true
+				vars.tutorial_can_proceed = true
 			end)
 		else
 			self:startround()
@@ -411,16 +446,16 @@ function game:init(...)
 end
 
 function game:update()
-	if vars.practice_step == 3 then
-		vars.practice_crank += abs(pd.getCrankChange())
-		if vars.practice_crank > 720 then
-			vars.practice_cue_open = false
-			vars.practice_can_proceed = false
-			vars.practice_step += 1
+	if vars.tutorial_step == 3 then
+		vars.tutorial_crank += abs(pd.getCrankChange())
+		if vars.tutorial_crank > 720 then
+			vars.tutorial_cue_open = false
+			vars.tutorial_can_proceed = false
+			vars.tutorial_step += 1
 			pd.timer.performAfterDelay(500, function()
-				vars.practice_cue_open = true
+				vars.tutorial_cue_open = true
 				pd.timer.performAfterDelay(1000, function()
-					vars.practice_can_proceed = true
+					vars.tutorial_can_proceed = true
 				end)
 			end)
 		end
@@ -433,12 +468,16 @@ function game:update()
 		vars.right = false
 	end
 	vars.beat = (60000 / vars.bpm) * (0.960 - ((vars.bpm - 120)) * 0.00032)
+	if vars.clouds_last ~= vars.clouds_anim.value // 2 * 2 then
+		gfx.sprite.redrawBackground()
+		vars.clouds_last = vars.clouds_anim.value // 2 * 2
+	end
 end
 
 function game:startround()
 	if vars.lives <= 0 then return end
 	pd.timer.performAfterDelay(vars.beat, function()
-		if vars.practice then
+		if vars.tutorial then
 			pulp.audio.playSong('theme_0', true)
 		else
 			if vars.level < 4 then
@@ -458,13 +497,14 @@ function game:startround()
 			end
 		gfx.popContext()
 		vars.show_info = true
+		gfx.sprite.redrawBackground()
 	end)
 	vars.in_progress = true
 	vars.timing:resetnew(vars.beat, 145, 140, pd.easingFunctions.outBack)
 	vars.timing.timerEndedCallback = function()
 		if vars.current_beat == 32 then
-			if vars.practice then
-				if vars.practice_cars_passed == vars.practice_cars_dropped then
+			if vars.tutorial then
+				if vars.tutorial_cars_passed == vars.tutorial_cars_dropped then
 					vars.timing.repeats = false
 					vars.in_progress = false
 					vars.timing:resetnew(vars.beat, 145, 145)
@@ -474,15 +514,15 @@ function game:startround()
 					vars.chunk_counter = 0
 					pulp.audio.stopSong()
 					pulp.audio.playSound('ding')
-					vars.practice_cue_open = false
-					vars.practice_step += 1
+					vars.tutorial_cue_open = false
+					vars.tutorial_step += 1
 					pd.timer.performAfterDelay(500, function()
-						vars.practice_cue_open = true
-						if vars.practice_step == 7 or vars.practice_step == 11 then
+						vars.tutorial_cue_open = true
+						if vars.tutorial_step == 7 or vars.tutorial_step == 11 then
 							pd.timer.performAfterDelay(1000, function()
-								vars.practice_can_proceed = true
+								vars.tutorial_can_proceed = true
 							end)
-						elseif vars.practice_step == 9 or vars.practice_step == 10 then
+						elseif vars.tutorial_step == 9 or vars.tutorial_step == 10 then
 							pd.timer.performAfterDelay(1000, function()
 								self:startround()
 							end)
@@ -490,8 +530,8 @@ function game:startround()
 					end)
 					return
 				else
-					vars.practice_cars_passed = 0
-					vars.practice_cars_dropped = 0
+					vars.tutorial_cars_passed = 0
+					vars.tutorial_cars_dropped = 0
 					vars.chunk_in_use = false
 					vars.chunk_counter = 0
 					vars.current_beat = 0
@@ -506,7 +546,7 @@ function game:startround()
 				vars.chunk_counter = 0
 				pulp.audio.stopSong()
 				if vars.level > 5 or vars.hardcore then
-					vars.bpm += 5
+					vars.bpm += 10
 				end
 				pulp.audio.playSound('ding')
 				pd.timer.performAfterDelay(1500, function()
@@ -519,7 +559,7 @@ function game:startround()
 		vars.timing.duration = vars.beat
 		vars.current_beat += 1
 		if vars.current_beat == 1 then
-			if vars.practice then
+			if vars.tutorial then
 				pulp.audio.playSong('theme_1')
 			else
 				if vars.level < 4 then
@@ -530,6 +570,7 @@ function game:startround()
 			end
 			pulp.audio.setBpm(vars.bpm)
 			vars.show_info = false
+			gfx.sprite.redrawBackground()
 		end
 		if vars.current_beat > 0 then
 			if vars.level % 5 == 0 then

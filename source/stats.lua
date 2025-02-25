@@ -10,6 +10,8 @@ function stats:init(...)
 	local args = {...} -- Arguments passed in through the scene management will arrive here
 	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
 
+	pd.datastore.write(save)
+
 	function pd.gameWillPause() -- When the game's paused...
 		local menu = pd.getSystemMenu()
 		menu:removeAllMenuItems()
@@ -36,7 +38,7 @@ function stats:init(...)
 	pd.inputHandlers.push(vars.statsHandlers)
 
 	gfx.sprite.setBackgroundDrawingCallback(function(x, y, width, height)
-		if save.score >= 50 then
+		if save.score >= 100 then
 			assets.stats:draw(0, 0)
 		else
 			assets.stats_locked:draw(0, 0)
@@ -46,7 +48,7 @@ function stats:init(...)
 		assets.c:drawText(text('bestscore') .. commalize(save.score), 20, 55)
 		assets.c:drawText(text('highestbpm') .. commalize(save.highest_bpm), 20, 75)
 		assets.c:drawText(text('highestlevel') .. commalize(save.highest_level), 20, 95)
-		if save.score >= 50 then
+		if save.score >= 100 then
 			assets.c:drawTextAligned(text('bestscore') .. commalize(save.hardcore_score), 380, 55, kTextAlignment.right)
 			assets.c:drawTextAligned(text('highestbpm') .. commalize(save.hardcore_highest_bpm), 380, 75, kTextAlignment.right)
 			assets.c:drawTextAligned(text('highestlevel') .. commalize(save.hardcore_highest_level), 380, 95, kTextAlignment.right)

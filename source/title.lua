@@ -15,6 +15,8 @@ function title:init(...)
 	local args = {...} -- Arguments passed in through the scene management will arrive here
 	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
 
+	pd.datastore.write(save)
+
 	function pd.gameWillPause() -- When the game's paused...
 		local menu = pd.getSystemMenu()
 		menu:removeAllMenuItems()
@@ -78,7 +80,7 @@ function title:init(...)
 					scenemanager:transitionscene(game, false)
 				elseif vars.selections[vars.selection] == 'hardcore' then
 					scenemanager:transitionscene(game, false, true)
-				elseif vars.selections[vars.selection] == 'practice' then
+				elseif vars.selections[vars.selection] == 'tutorial' then
 					scenemanager:transitionscene(game, true)
 				elseif vars.selections[vars.selection] == 'leaderboards' then
 					scenemanager:transitionscene(leaderboards)
@@ -101,11 +103,11 @@ function title:init(...)
 
 	vars.selections = {'newgame'}
 
-	if save.score >= 50 then
+	if save.score >= 100 then
 		table.insert(vars.selections, 'hardcore')
 	end
 
-	table.insert(vars.selections, 'practice')
+	table.insert(vars.selections, 'tutorial')
 
 	if catalog then
 		table.insert(vars.selections, 'leaderboards')
@@ -118,7 +120,7 @@ function title:init(...)
 		vars.selection = 1
 		vars.selection_timer = pd.timer.new(1, 30, 30)
 	else
-		if save.score >= 50 then
+		if save.score >= 100 then
 			vars.selection = 3
 			vars.selection_timer = pd.timer.new(1, -30, -30)
 		else
@@ -235,5 +237,7 @@ function title:update()
 		pulp.audio.playSound('move')
 		vars.selection_timer = pd.timer.new(200, vars.selection_timer.value, -30 * vars.selection + 60, pd.easingFunctions.outBack)
 	end
-	gfx.sprite.redrawBackground()
+	if vars.selection_timer.timeLeft > 0 or vars.intro_anim.timeLeft > 0 then
+		gfx.sprite.redrawBackground()
+	end
 end

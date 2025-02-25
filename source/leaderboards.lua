@@ -9,7 +9,9 @@ class('leaderboards').extends(gfx.sprite) -- Create the scene's class
 function leaderboards:init(...)
 	leaderboards.super.init(self)
 	local args = {...} -- Arguments passed in through the scene management will arrive here
-	gfx.sprite.setAlwaysRedraw(true) -- Should this scene redraw the sprites constantly?
+	gfx.sprite.setAlwaysRedraw(false) -- Should this scene redraw the sprites constantly?
+
+	pd.datastore.write(save)
 
 	function pd.gameWillPause() -- When the game's paused...
 		local menu = pd.getSystemMenu()
@@ -39,6 +41,7 @@ function leaderboards:init(...)
 		timer4 = pd.timer.new(1, -404, -404),
 		timer5 = pd.timer.new(1, -404, -404),
 		result = {},
+		best = {},
 	}
 	vars.leaderboardsHandlers = {
 		BButtonDown = function()
@@ -50,7 +53,8 @@ function leaderboards:init(...)
 
 		AButtonDown = function()
 			if not vars.loading then
-				if save.score >= 50 and not vars.queued then
+				pulp.audio.playSound('select')
+				if save.score >= 100 and not vars.queued then
 					if vars.mode == "normal" then
 						vars.mode = "hardcore"
 					elseif vars.mode == "hardcore" then
@@ -114,10 +118,13 @@ function leaderboards:init(...)
 			assets.c:drawText(text('hardcoremode'), 10, 33)
 			assets.c:drawTextAligned(text('score') .. save.hardcore_score, 390, 10, kTextAlignment.right)
 		end
+		if vars.best.rank ~= nil then
+			assets.c:drawTextAligned(text('rank') .. ordinal(vars.best.rank), 390, 25, kTextAlignment.right)
+		end
 		if vars.loading or vars.queued then
 			assets.c:drawText(text('Bback'), 10, 222)
 		else
-			if save.score >= 50 then
+			if save.score >= 100 then
 				if vars.mode == "normal" then
 					assets.c:drawText(text('Ahardcore') .. text('Bback'), 10, 222)
 				elseif vars.mode == "hardcore" then
@@ -135,14 +142,21 @@ function leaderboards:init(...)
 	end)
 
 	self:add()
+	pulp.audio.playSong('title_lower')
 	self:refresh()
+end
+
+function leaderboards:update()
+	if vars.timer1.timeLeft ~= 0 or vars.timer5.timeLeft ~= 0 then
+		gfx.sprite.redrawBackground()
+	end
 end
 
 function leaderboards:refresh()
 	if vars.queued then return end
 	local delay = 0
 	vars.queued = true
-	if not vars.loading and next(vars.result.scores) ~= nil and vars.result.scores ~= nil then
+	if not vars.loading and next(vars.result.scores or {}) ~= nil and vars.result.scores ~= nil then
 		vars.timer1:resetnew(500, vars.timer1.value, 404, pd.easingFunctions.inBack)
 		vars.timer2:resetnew(500, vars.timer2.value, 404, pd.easingFunctions.inBack)
 		vars.timer3:resetnew(500, vars.timer3.value, 404, pd.easingFunctions.inBack)
@@ -153,6 +167,8 @@ function leaderboards:refresh()
 	pd.timer.performAfterDelay(delay, function()
 		vars.loading = true
 		vars.result = {}
+		vars.best = {}
+		gfx.sprite.redrawBackground()
 		vars.randomcar1 = random(1, 4)
 		vars.randomcar2 = random(1, 4)
 		vars.randomcar3 = random(1, 4)
@@ -161,16 +177,24 @@ function leaderboards:refresh()
 		pd.scoreboards.getScores(vars.mode, function(status, result)
 			if status.code == "OK" then
 				vars.result = result
-				vars.timer1:resetnew(500, -404, 0, pd.easingFunctions.outCubic)
-				vars.timer2:resetnew(500, -404, 0, pd.easingFunctions.outCubic)
-				vars.timer3:resetnew(500, -404, 0, pd.easingFunctions.outCubic)
-				vars.timer4:resetnew(500, -404, 0, pd.easingFunctions.outCubic)
-				vars.timer5:resetnew(500, -404, 0, pd.easingFunctions.outCubic)
+				if vars.timer1 ~= nil then vars.timer1:resetnew(500, -404, 0, pd.easingFunctions.outCubic) end
+				if vars.timer2 ~= nil then vars.timer2:resetnew(500, -404, 0, pd.easingFunctions.outCubic) end
+				if vars.timer3 ~= nil then vars.timer3:resetnew(500, -404, 0, pd.easingFunctions.outCubic) end
+				if vars.timer4 ~= nil then vars.timer4:resetnew(500, -404, 0, pd.easingFunctions.outCubic) end
+				if vars.timer5 ~= nil then vars.timer5:resetnew(500, -404, 0, pd.easingFunctions.outCubic) end
+				gfx.sprite.redrawBackground()
+				pd.scoreboards.getPersonalBest(vars.mode, function(status, result)
+					vars.queued = false
+					vars.loading = false
+					if status.code == "OK" then
+						vars.best = result
+					end
+					gfx.sprite.redrawBackground()
+				end)
 			else
 				vars.result = "fail"
+				gfx.sprite.redrawBackground()
 			end
-			vars.queued = false
-			vars.loading = false
 		end)
 	end)
 end

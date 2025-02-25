@@ -66,7 +66,7 @@ function gameover:init(...)
 			else
 				assets.c:drawTextAligned(text('youscored') .. vars.score .. text('points') .. '\n' .. text('yourcurrentbestis') .. vars.holdscore .. text('points') .. '\n' .. text('tolevel') .. vars.level .. text('thats') .. vars.bpm .. text('thatsbpm'), 200, 55, kTextAlignment.center)
 			end
-			if vars.score >= 50 and vars.holdscore < 50 then
+			if vars.score >= 100 and vars.holdscore < 100 then
 				assets.c:drawTextAligned(text('unlockedhardcore'), 200, 115, kTextAlignment.center)
 			end
 		end
@@ -89,4 +89,5 @@ function gameover:init(...)
 
 	self:add()
 	pulp.audio.playSong('title_lower')
+	pd.datastore.write(save)
 end
