@@ -9,8 +9,10 @@ import 'CoreLibs/object'
 import 'CoreLibs/sprites'
 import 'CoreLibs/graphics'
 import 'CoreLibs/animation'
+import 'achievements'
 import 'scenemanager'
 import 'pulp-audio'
+import 'cheevos'
 import 'title'
 scenemanager = scenemanager()
 
@@ -45,14 +47,41 @@ function savecheck()
 	save.crankage_net = save.crankage_net or 0
 	if save.react_sfx == nil then save.react_sfx = true end
 	if save.seen_tutorial == nil then save.seen_tutorial = false end
+	if save.buttons == nil then save.buttons = false end
+	if save.unlocked_tilt == nil then save.unlocked_tilt = false end
+	if save.tilt == nil then save.tilt = false end
+	save.bpm = save.bpm or 120
+	save.music = save.music or 6
 end
 
 -- ... now we run that!
 savecheck()
 
+achievements.initialize(achievementData, true)
+
+function updatecheevos()
+	if save.seen_tutorial then achievements.grant('tutorial') end
+	achievements.advanceTo('normal50', save.score)
+	achievements.advanceTo('normal100', save.score)
+	achievements.advanceTo('normal250', save.score)
+	achievements.advanceTo('normal500', save.score)
+	achievements.advanceTo('hardcore50', save.hardcore_score)
+	achievements.advanceTo('hardcore100', save.hardcore_score)
+	achievements.advanceTo('hardcore250', save.hardcore_score)
+	achievements.advanceTo('hardcore500', save.hardcore_score)
+	achievements.advanceTo('cars50', save.cars_passed)
+	achievements.advanceTo('cars100', save.cars_passed)
+	achievements.advanceTo('cars250', save.cars_passed)
+	achievements.advanceTo('cars500', save.cars_passed)
+	achievements.save()
+end
+
+updatecheevos()
+
 -- When the game closes...
 function pd.gameWillTerminate()
     pd.datastore.write(save)
+	achievements.save()
 	local img = gfx.getDisplayImage()
 	local byebye = gfx.imagetable.new('images/exit' .. math.random(1, 4))
 	local byebyeanim = gfx.animator.new(1100, 1, #byebye)
@@ -66,6 +95,7 @@ end
 
 function pd.deviceWillSleep()
     pd.datastore.write(save)
+	achievements.save()
 end
 
 -- Setting up music
@@ -186,7 +216,7 @@ function pd.update()
     gfx.sprite.update()
     pd.timer.updateTimers()
 	pulp.audio.update()
-	if vars.crank_touched ~= nil and not vars.crank_touched then
+	if vars.crank_touched ~= nil and not vars.crank_touched and not save.buttons and not save.tilt then
 		pd.ui.crankIndicator:draw()
 		if math.abs(pd.getCrankChange()) > 3 then
 			vars.crank_touched = true

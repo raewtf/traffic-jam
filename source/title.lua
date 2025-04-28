@@ -2,6 +2,7 @@ import 'game'
 import 'credits'
 import 'stats'
 import 'leaderboards'
+import 'Tanuk_CodeSequence'
 
 -- Setting up consts
 local pd <const> = playdate
@@ -20,6 +21,39 @@ function title:init(...)
 	function pd.gameWillPause() -- When the game's paused...
 		local menu = pd.getSystemMenu()
 		menu:removeAllMenuItems()
+		if save.unlocked_tilt then
+			menu:addOptionsMenuItem(text('controls'), {text('crank'), text('buttons'), text('tilt')}, (save.tilt and text('tilt')) or (save.buttons and text('buttons')) or text('crank'), function(arg)
+				if arg == text('tilt') then
+					save.tilt = true
+					save.buttons = false
+				elseif arg == text('buttons') then
+					save.tilt = false
+					save.buttons = true
+				else
+					save.tilt = false
+					save.buttons = false
+				end
+			end)
+		else
+			menu:addOptionsMenuItem(text('controls'), {text('crank'), text('buttons')}, (save.buttons and text('buttons')) or text('crank'), function(arg)
+				if arg == text('buttons') then
+					save.tilt = false
+					save.buttons = true
+				else
+					save.tilt = false
+					save.buttons = false
+				end
+			end)
+		end
+		menu:addOptionsMenuItem(text('startbpm'), {30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100, 105, 110, 115, 120, 125, 130, 135, 140, 145, 150, 155, 160, 165, 170}, save.bpm, function(arg)
+			save.bpm = arg
+		end)
+		menu:addOptionsMenuItem(text('bgm'), {1, 2, 3, 4, 5, text('random')}, (save.music == 6 and text('random')) or save.music, function(arg)
+			if arg == text('random') then
+				save.music = 6
+			else
+				save.music = arg
+			end		end)
 	end
 
 	assets = { -- All assets go here. Images, sounds, fonts, etc.
@@ -130,6 +164,13 @@ function title:init(...)
 	end
 
 	vars.selection_timer.destroyOnCompletion = false
+
+	if not save.unlocked_tilt then
+		local cheat_code_all = Tanuk_CodeSequence({pd.kButtonRight, pd.kButtonUp, pd.kButtonB, pd.kButtonDown, pd.kButtonUp, pd.kButtonB, pd.kButtonDown, pd.kButtonUp, pd.kButtonB}, function()
+			save.unlocked_tilt = true
+			pulp.audio.playSound('yea')
+		end, false)
+	end
 
 	gfx.sprite.setBackgroundDrawingCallback(function(x, y, width, height)
 		gfx.setColor(gfx.kColorWhite)

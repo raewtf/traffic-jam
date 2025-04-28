@@ -29,6 +29,7 @@ function game:init(...)
 					vars.in_progress = false
 					pulp.audio.stopSong()
 					scenemanager:transitionscene(title)
+					if save.tilt then pd.stopAccelerometer() end
 					save.seen_tutorial = true
 				end)
 			else
@@ -37,6 +38,7 @@ function game:init(...)
 					vars.in_progress = false
 					pulp.audio.stopSong()
 					pulp.audio.playSound('crash')
+					if save.tilt then pd.stopAccelerometer() end
 					scenemanager:transitionscene(gameover, vars.score, vars.level, vars.bpm, vars.hardcore)
 				end)
 			end
@@ -59,7 +61,7 @@ function game:init(...)
 		car = gfx.imagetable.new('images/car'),
 		car_flip = gfx.imagetable.new('images/car_flip'),
 		warn = gfx.image.new('images/warn'),
-		clouds = gfx.image.new('images/clouds'),
+		clouds = gfx.imagetable.new('images/clouds'),
 	}
 
 	vars = { -- All variables go here. Args passed in from earlier, scene variables, etc.
@@ -91,10 +93,17 @@ function game:init(...)
 		sign_flip_anim = pd.timer.new(1, 0, 0),
 		clouds_anim = pd.timer.new(120000, 0, -800),
 		clouds_last = 0,
+		clouds = 8,
+		buttons_anim = pd.timer.new(1, -45, -45),
+		bpm_raising = false,
+		rand = 1,
 	}
 	vars.gameHandlers = {
 		AButtonDown = function()
-			if vars.tutorial_can_proceed then
+			if save.buttons then
+				vars.buttons_anim:resetnew(300, vars.buttons_anim.value, 45, pd.easingFunctions.outBack)
+			end
+			if vars.tutorial and vars.tutorial_can_proceed then
 				if vars.tutorial_step == 5 or vars.tutorial_step == 7 then
 					vars.tutorial_cue_open = false
 					vars.tutorial_can_proceed = false
@@ -107,12 +116,18 @@ function game:init(...)
 						end)
 					end)
 				elseif vars.tutorial_step == 11 then
+					if save.tilt then pd.stopAccelerometer() end
 					scenemanager:transitionscene(title)
 					save.seen_tutorial = true
+					updatecheevos()
 				else
 					vars.tutorial_cue_open = false
 					vars.tutorial_can_proceed = false
-					vars.tutorial_step += 1
+					if vars.tutorial_step == 2 and (save.buttons or save.tilt) then
+						vars.tutorial_step = 4
+					else
+						vars.tutorial_step += 1
+					end
 					pulp.audio.playSound('select')
 					pd.timer.performAfterDelay(500, function()
 						vars.tutorial_cue_open = true
@@ -127,21 +142,42 @@ function game:init(...)
 				end
 			end
 		end,
+
+		BButtonDown = function()
+			if save.buttons then
+				vars.buttons_anim:resetnew(300, vars.buttons_anim.value, -45, pd.easingFunctions.outBack)
+			end
+		end,
+
+		leftButtonDown = function()
+			if save.buttons then
+				vars.buttons_anim:resetnew(300, vars.buttons_anim.value, -45, pd.easingFunctions.outBack)
+			end
+		end,
+
+		rightButtonDown = function()
+			if save.buttons then
+				vars.buttons_anim:resetnew(300, vars.buttons_anim.value, 45, pd.easingFunctions.outBack)
+			end
+		end
 	}
+	pd.inputHandlers.push(vars.gameHandlers)
 	if vars.tutorial then
-		pd.inputHandlers.push(vars.gameHandlers)
 		vars.crank_touched = true
+		vars.bpm = 120
+		vars.lives = 1
 	else
 		vars.crank_touched = false
+		if vars.hardcore then
+			vars.lives = 1
+			vars.bpm = tonumber(save.bpm + 30)
+		else
+			vars.lives = 3
+			vars.bpm = tonumber(save.bpm)
+		end
+		vars.start_bpm = math.min(vars.bpm, 120)
 	end
 
-	if vars.hardcore then
-		vars.lives = 1
-		vars.bpm = 150
-	else
-		vars.lives = 3
-		vars.bpm = 120
-	end
 	vars.warn_left.discardOnCompletion = false
 	vars.warn_right.discardOnCompletion = false
 	vars.sign_flip_anim.discardOnCompletion = false
@@ -149,6 +185,17 @@ function game:init(...)
 	vars.beat = (60000 / vars.bpm)
 	vars.timing.discardOnCompletion = false
 	vars.y_anim.repeats = true
+	vars.buttons_anim.discardOnCompletion = false
+	vars.clouds_anim.timerEndedCallback = function()
+		local rand = random(1, 17)
+		if rand <= 8 then
+			vars.clouds = rand
+		else
+			vars.clouds = 8
+		end
+	end
+
+	if save.tilt then pd.startAccelerometer() end
 
 	gfx.sprite.setBackgroundDrawingCallback(function(x, y, width, height)
 		if vars.show_info then
@@ -156,7 +203,7 @@ function game:init(...)
 		else
 			assets.bg:draw(0, 0)
 		end
-		assets.clouds:draw(vars.clouds_anim.value // 2 * 2, 0)
+		assets.clouds[vars.clouds]:draw(vars.clouds_anim.value // 2 * 2, 0)
 		if not vars.tutorial then
 			assets.nd:drawText(commalize(vars.score), 10, 10)
 			if vars.hardcore then
@@ -211,13 +258,26 @@ function game:init(...)
 		self.type = type
 		self.direction = direction
 		self.exists = true
+		self.rand = math.random(1, 10)
 		if self.direction then
-			self:setImage(assets.car_flip[type])
+			if self.rand >= 1 and self.rand <= 7 then
+				self:setImage(assets.car_flip[(type * 3) - 2])
+			elseif self.rand >= 8 and self.rand <= 9 then
+				self:setImage(assets.car_flip[(type * 3) - 1])
+			elseif self.rand == 10 then
+				self:setImage(assets.car_flip[(type * 3)])
+			end
 			self.timer_start = 485
 			self.timer_end = -85
 			self.warn = "right"
 		else
-			self:setImage(assets.car[type])
+			if self.rand >= 1 and self.rand <= 7 then
+				self:setImage(assets.car[(type * 3) - 2])
+			elseif self.rand >= 8 and self.rand <= 9 then
+				self:setImage(assets.car[(type * 3) - 1])
+			elseif self.rand == 10 then
+				self:setImage(assets.car[(type * 3)])
+			end
 			self.timer_start = -85
 			self.timer_end = 485
 			self.warn = "left"
@@ -308,28 +368,27 @@ function game:init(...)
 			self.points_timer = pd.timer.new(self.timer_duration / 2, self.timer_start, self.timer_end)
 			self.points_timer.timerEndedCallback = function()
 				if vars.lives > 0 then
-					local crank = pd.getCrankPosition()
-					if direction and crank >= 180 then
+					if direction and not vars.right then
 						vars.score += 1
 						save.cars_passed += 1
 						if save.react_sfx then
 							pulp.audio.playSound('yea')
 						end
 						if vars.tutorial then vars.tutorial_cars_passed += 1 end
-						if vars.score % 100 == 0 then
+						if vars.score % 100 == 0 and not vars.hardcore then
 							vars.lives += 1
 							if vars.lives > 3 then vars.lives = 3 end
 							gfx.sprite.redrawBackground()
 						end
 						gfx.sprite.redrawBackground()
-					elseif not direction and crank < 180 then
+					elseif not direction and vars.right then
 						vars.score += 1
 						save.cars_passed += 1
 						if save.react_sfx then
 							pulp.audio.playSound('yea')
 						end
 						if vars.tutorial then vars.tutorial_cars_passed += 1 end
-						if vars.score % 100 == 0 then
+						if vars.score % 100 == 0 and not vars.hardcore then
 							vars.lives += 1
 							if vars.lives > 3 then vars.lives = 3 end
 							gfx.sprite.redrawBackground()
@@ -352,6 +411,7 @@ function game:init(...)
 								pulp.audio.stopSong()
 								pd.timer.performAfterDelay(1000, function()
 									pulp.audio.playSound('crash')
+									if save.tilt then pd.stopAccelerometer() end
 									shakies()
 									shakies_y()
 									if vars.warn == "right" then
@@ -390,12 +450,22 @@ function game:init(...)
 		self:add()
 	end
 	function classes.playfield:update()
-		if math.floor(vars.timing.value) >= 140 or vars.warn_left.value > 0 or vars.warn_right.value > 0 or pd.getCrankChange() ~= 0 then
+		if math.floor(vars.timing.value) >= 140 or vars.warn_left.value > 0 or vars.warn_right.value > 0 or ((not save.buttons and not save.tilt) and pd.getCrankChange() ~= 0) or vars.buttons_anim.timeLeft > 0 or save.tilt then
 			self:markDirty()
 		end
 	end
 	function classes.playfield:draw()
-		vars.crank = pd.getCrankPosition()
+		if save.tilt then
+			if pd.accelerometerIsRunning() then
+				local x, y, z = pd.readAccelerometer()
+				vars.crank = (x *= 90) % 360
+				if vars.crank == 360 then vars.crank = 0 end
+			end
+		elseif save.buttons then
+			vars.crank = vars.buttons_anim.value % 360
+		else
+			vars.crank = pd.getCrankPosition()
+		end
 		local crank = vars.crank
 		if crank >= 90 and crank <= 270 then
 			crank = -crank
@@ -460,8 +530,10 @@ function game:update()
 			end)
 		end
 	end
-	save.crankage += abs(pd.getCrankChange())
-	save.crankage_net += pd.getCrankChange()
+	if not save.buttons and not save.tilt then
+		save.crankage += abs(pd.getCrankChange())
+		save.crankage_net += pd.getCrankChange()
+	end
 	if vars.crank <= 180 then
 		vars.right = true
 	else
@@ -477,23 +549,40 @@ end
 function game:startround()
 	if vars.lives <= 0 then return end
 	pd.timer.performAfterDelay(vars.beat, function()
-		if vars.tutorial then
-			pulp.audio.playSong('theme_0', true)
-		else
-			if vars.level < 4 then
-				pulp.audio.playSong('theme_' .. vars.level - 1, true)
+		if save.music == 6 then
+			vars.rand = math.random(1, 5)
+			if vars.tutorial then
+				pulp.audio.playSong('theme' .. vars.rand .. '_0', true)
 			else
-				pulp.audio.playSong('theme_' .. 3, true)
+				if vars.level < 4 then
+					pulp.audio.playSong('theme' .. vars.rand .. '_' .. vars.level - 1, true)
+				else
+					pulp.audio.playSong('theme' .. vars.rand .. '_' .. 3, true)
+				end
+			end
+		else
+			if vars.tutorial then
+				pulp.audio.playSong('theme' .. save.music .. '_0', true)
+			else
+				if vars.level < 4 then
+					pulp.audio.playSong('theme' .. save.music .. '_' .. vars.level - 1, true)
+				else
+					pulp.audio.playSong('theme' .. save.music .. '_' .. 3, true)
+				end
 			end
 		end
 		pulp.audio.setBpm(vars.bpm)
 		assets.bg_plus = gfx.image.new('images/bg')
 		gfx.pushContext(assets.bg_plus)
 			assets.nd:drawTextAligned(text('level') .. commalize(vars.level), 200, 10, kTextAlignment.center)
-			if vars.level <= 5 then
+			if vars.level <= 4 then
 				assets.c:drawTextAligned(text('level' .. vars.level .. 'tag'), 200, 35, kTextAlignment.center)
 			else
-				assets.c:drawTextAligned(text('levelspeed'), 200, 35, kTextAlignment.center)
+				if vars.bpm_raising then
+					assets.c:drawTextAligned(text('levelspeed'), 200, 35, kTextAlignment.center)
+				else
+					assets.c:drawTextAligned(text('levelgo'), 200, 35, kTextAlignment.center)
+				end
 			end
 		gfx.popContext()
 		vars.show_info = true
@@ -545,8 +634,12 @@ function game:startround()
 				vars.chunk_in_use = false
 				vars.chunk_counter = 0
 				pulp.audio.stopSong()
-				if vars.level > 5 or vars.hardcore then
-					vars.bpm += 10
+				vars.start_bpm += 10
+				if vars.start_bpm > vars.bpm then
+					vars.bpm = vars.start_bpm
+					vars.bpm_raising = true
+				else
+					vars.bpm_raising = false
 				end
 				pulp.audio.playSound('ding')
 				pd.timer.performAfterDelay(1500, function()
@@ -559,13 +652,25 @@ function game:startround()
 		vars.timing.duration = vars.beat
 		vars.current_beat += 1
 		if vars.current_beat == 1 then
-			if vars.tutorial then
-				pulp.audio.playSong('theme_1')
-			else
-				if vars.level < 4 then
-					pulp.audio.playSong('theme_' .. vars.level)
+			if save.music == 6 then
+				if vars.tutorial then
+					pulp.audio.playSong('theme' .. vars.rand .. '_1', true)
 				else
-					pulp.audio.playSong('theme_' .. 4)
+					if vars.level < 4 then
+						pulp.audio.playSong('theme' .. vars.rand .. '_' .. vars.level, true)
+					else
+						pulp.audio.playSong('theme' .. vars.rand .. '_' .. 4, true)
+					end
+				end
+			else
+				if vars.tutorial then
+					pulp.audio.playSong('theme' .. save.music .. '_1', true)
+				else
+					if vars.level < 4 then
+						pulp.audio.playSong('theme' .. save.music .. '_' .. vars.level, true)
+					else
+						pulp.audio.playSong('theme' .. save.music .. '_' .. 4, true)
+					end
 				end
 			end
 			pulp.audio.setBpm(vars.bpm)

@@ -35,6 +35,7 @@ function leaderboards:init(...)
 		mode = "normal",
 		loading = true,
 		queued = false,
+		in_leaderboards = true,
 		timer1 = pd.timer.new(1, -404, -404),
 		timer2 = pd.timer.new(1, -404, -404),
 		timer3 = pd.timer.new(1, -404, -404),
@@ -90,10 +91,13 @@ function leaderboards:init(...)
 			gfx.fillRect(0, 53, 400, 162)
 			gfx.setColor(gfx.kColorBlack)
 			for _, v in ipairs(vars.result.scores) do
-				assets.nd:drawText(v.rank, 10 + vars['timer' .. v.rank].value, 25 + (32.5 * v.rank))
-				assets.title_cars[vars['randomcar' .. v.rank]]:draw(30 + vars['timer' .. v.rank].value, 25 + (32.5 * v.rank))
-				assets.c:drawText(v.player, 80 + vars['timer' .. v.rank].value, 28 + (32.5 * v.rank))
-				assets.c:drawTextAligned(v.value, 390 + vars['timer' .. v.rank].value, 28 + (32.5 * v.rank), kTextAlignment.right)
+				printTable(v)
+				if v.rank <= 5 then
+					assets.nd:drawText(v.rank, 10 + vars['timer' .. v.rank].value, 25 + (32.5 * v.rank))
+					assets.title_cars[vars['randomcar' .. v.rank]]:draw(30 + vars['timer' .. v.rank].value, 25 + (32.5 * v.rank))
+					assets.c:drawText(v.player, 80 + vars['timer' .. v.rank].value, 28 + (32.5 * v.rank))
+					assets.c:drawTextAligned(v.value, 390 + vars['timer' .. v.rank].value, 28 + (32.5 * v.rank), kTextAlignment.right)
+				end
 			end
 			gfx.setColor(gfx.kColorWhite)
 			gfx.setDitherPattern(0.5, gfx.image.kDitherTypeBayer2x2)
@@ -119,6 +123,9 @@ function leaderboards:init(...)
 			assets.c:drawTextAligned(text('score') .. save.hardcore_score, 390, 10, kTextAlignment.right)
 		end
 		if vars.best.rank ~= nil then
+			if string.len(vars.best.player) == 16 and tonumber(vars.best.player) then
+				assets.c:drawTextAligned(text('change_name'), 235, 10, kTextAlignment.center)
+			end
 			assets.c:drawTextAligned(text('rank') .. ordinal(vars.best.rank), 390, 25, kTextAlignment.right)
 		end
 		if vars.loading or vars.queued then
@@ -175,7 +182,7 @@ function leaderboards:refresh()
 		vars.randomcar4 = random(1, 4)
 		vars.randomcar5 = random(1, 4)
 		pd.scoreboards.getScores(vars.mode, function(status, result)
-			if status.code == "OK" then
+			if status.code == "OK" and vars.in_leaderboards then
 				vars.result = result
 				if vars.timer1 ~= nil then vars.timer1:resetnew(500, -404, 0, pd.easingFunctions.outCubic) end
 				if vars.timer2 ~= nil then vars.timer2:resetnew(500, -404, 0, pd.easingFunctions.outCubic) end
@@ -186,7 +193,7 @@ function leaderboards:refresh()
 				pd.scoreboards.getPersonalBest(vars.mode, function(status, result)
 					vars.queued = false
 					vars.loading = false
-					if status.code == "OK" then
+					if status.code == "OK" and vars.in_leaderboards then
 						vars.best = result
 					end
 					gfx.sprite.redrawBackground()

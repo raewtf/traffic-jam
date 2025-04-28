@@ -56,22 +56,22 @@ function gameover:init(...)
 		assets.nd:drawTextAligned(text('gameover'), 200, 22, kTextAlignment.center)
 		if vars.hardcore then
 			if vars.score > vars.holdhardscore then
-				assets.c:drawTextAligned(text('youscored') .. vars.score .. text('points') .. '\n' .. text('newbest') .. '\n' .. text('tolevel') .. vars.level .. text('thats') .. vars.bpm .. text('thatsbpm'), 200, 55, kTextAlignment.center)
+				assets.c:drawTextAligned(text('youscored') .. vars.score .. (vars.score == 1 and text('point') or text('points')) .. '\n' .. text('newbest') .. '\n' .. text('tolevel') .. vars.level .. text('thats') .. vars.bpm .. text('thatsbpm'), 200, 55, kTextAlignment.center)
 			else
-				assets.c:drawTextAligned(text('youscored') .. vars.score .. text('points') .. '\n' .. text('yourcurrentbestis') .. vars.holdhardscore .. text('points') .. '\n' .. text('tolevel') .. vars.level .. text('thats') .. vars.bpm .. text('thatsbpm'), 200, 55, kTextAlignment.center)
+				assets.c:drawTextAligned(text('youscored') .. vars.score .. (vars.score == 1 and text('point') or text('points')) .. '\n' .. text('yourcurrentbestis') .. vars.holdhardscore .. (vars.holdhardscore == 1 and text('point') or text('points')) .. '\n' .. text('tolevel') .. vars.level .. text('thats') .. vars.bpm .. text('thatsbpm'), 200, 55, kTextAlignment.center)
 			end
 		else
 			if vars.score > vars.holdscore then
-				assets.c:drawTextAligned(text('youscored') .. vars.score .. text('points') .. '\n' .. text('newbest') .. '\n' .. text('tolevel') .. vars.level .. text('thats') .. vars.bpm .. text('thatsbpm'), 200, 55, kTextAlignment.center)
+				assets.c:drawTextAligned(text('youscored') .. vars.score .. (vars.score == 1 and text('point') or text('points')) .. '\n' .. text('newbest') .. '\n' .. text('tolevel') .. vars.level .. text('thats') .. vars.bpm .. text('thatsbpm'), 200, 55, kTextAlignment.center)
 			else
-				assets.c:drawTextAligned(text('youscored') .. vars.score .. text('points') .. '\n' .. text('yourcurrentbestis') .. vars.holdscore .. text('points') .. '\n' .. text('tolevel') .. vars.level .. text('thats') .. vars.bpm .. text('thatsbpm'), 200, 55, kTextAlignment.center)
+				assets.c:drawTextAligned(text('youscored') .. vars.score .. (vars.score == 1 and text('point') or text('points')) .. '\n' .. text('yourcurrentbestis') .. vars.holdscore .. (vars.holdscore == 1 and text('point') or text('points')) .. '\n' .. text('tolevel') .. vars.level .. text('thats') .. vars.bpm .. text('thatsbpm'), 200, 55, kTextAlignment.center)
 			end
 			if vars.score >= 100 and vars.holdscore < 100 then
 				assets.c:drawTextAligned(text('unlockedhardcore'), 200, 115, kTextAlignment.center)
 			end
 		end
 		gfx.setImageDrawMode(gfx.kDrawModeFillWhite)
-		assets.c:drawTextAligned(text('Aretry') .. text('Bback'), 200, 222, kTextAlignment.center)
+		assets.c:drawTextAligned(text('Bback') .. text('Aretry'), 200, 222, kTextAlignment.center)
 		gfx.setImageDrawMode(gfx.kDrawModeCopy)
 	end)
 
@@ -79,15 +79,26 @@ function gameover:init(...)
 		if vars.score > save.hardcore_score then save.hardcore_score = vars.score end
 		if vars.level > save.hardcore_highest_level then save.hardcore_highest_level = vars.level end
 		if vars.bpm > save.hardcore_highest_bpm then save.hardcore_highest_bpm = vars.bpm end
-		if catalog then pd.scoreboards.addScore('hardcore', vars.score) end
+		if catalog then
+			pd.scoreboards.addScore('hardcore', vars.score, function(status, result)
+				printTable(status)
+				printTable(result)
+			end)
+		end
 	else
 		if vars.score > save.score then save.score = vars.score end
 		if vars.level > save.highest_level then save.highest_level = vars.level end
 		if vars.bpm > save.highest_bpm then save.highest_bpm = vars.bpm end
-		if catalog then pd.scoreboards.addScore('normal', vars.score) end
+		if catalog then
+			pd.scoreboards.addScore('normal', vars.score, function(status, result)
+				printTable(status)
+				printTable(result)
+			end)
+		end
 	end
 
 	self:add()
 	pulp.audio.playSong('title_lower')
+	updatecheevos()
 	pd.datastore.write(save)
 end
